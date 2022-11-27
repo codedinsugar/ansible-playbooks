@@ -1,0 +1,110 @@
+- name: Kubernetes cluster setup
+  hosts: soullab
+  become: yes
+  
+  tasks:
+    - name: Disable selinux
+      ansible.posix.selinux:
+        state: disabled
+    - name: Remove swapfile from /etc/fstab
+      mount:
+        name: "{{ item }}"
+        fstype: swap
+        state: absent
+      with_items:
+        - swap
+        - none
+    - name: Disable swap
+      command: swapoff -a
+      when: ansible_swaptotal_mb > 0
+    - name: Configure firewalld rules
+      firewalld:
+        permanent: yes
+        immediate: yes
+        state: enabled
+        port: "{{ item.port }}/tcp"
+      with_items:
+        - {port: "6443"}
+        - {port: "2379-2380"}
+        - {port: "10250-10252"}
+        - {port: "10255"}
+    - name: Add system modules
+      modprobe:
+        name: br_netfilter
+        state: present
+    - name: Enable bridge-nf-call tables
+      sysctl:
+        name: net.bridge.bridge-nf-call-iptables
+        value: 1
+        state: present
+        reload: yes
+    - name: Reload sysctl
+      ansible.builtin.shell: |
+        sysctl --system
+    - name: Add Docker repo to yum
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/centos/docker-ce.repo
+        dest: /etc/yum.repos.d/docker-ce.repo
+    - name: Install docker-ce
+      ansible.builtin.yum:
+        name: "{{ packages }}"
+        state: present
+      vars:
+        packages:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+    - name: Enable docker service
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: yes
+    - name: Enable containerd service
+      ansible.builtin.service:
+        name: containerd
+        state: started
+        enabled: yes
+    - name: Generate containerd config.toml and change cgroup
+      ansible.builtin.shell: |
+        containerd config default | sudo tee /etc/containerd/config.toml
+        sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/g' /etc/containerd/config.toml
+    - name: Add Kubernetes repo to yum
+      ansible.builtin.shell: |
+        cat <<EOF > /etc/yum.repos.d/kubernetes.repo
+        [kubernetes]
+        name=Kubernetes
+        baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+        enabled=1
+        gpgcheck=1
+        repo_gpgcheck=1
+        gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+        EOF
+    - name: Install kubernetes and bootstrap cluster
+      ansible.builtin.yum:
+        name: "{{ packages }}"
+        state: present
+      vars:
+        packages:
+          - kubeadm
+          - kubectl
+          - kubelet
+    - name: Enable kubelet service
+      ansible.builtin.service:
+        name: kubelet
+        state: started
+        enabled: yes
+    - name: Restart containerd service
+      ansible.builtin.service:
+        name: containerd
+        state: restarted
+        enabled: yes
+# - hosts: soulcontrol1
+#   become: yes
+#   tasks:
+#     - name: Initialize kubeadm
+#       ansible.builtin.shell: |
+#         kubeadm init --pod-network-cidr=10.244.0.0/16
+      
+#     - name: Install Flannel
+#       ansible.builtin.shell: |
+#         kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml

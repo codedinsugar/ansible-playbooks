@@ -1,0 +1,14 @@
+- name: YUM playbook
+  hosts: soullab
+  become: yes
+
+  tasks:
+    - name: Install latest version of yum-utils
+      ansible.builtin.yum:
+        name: "{{ packages }}"
+        state: present
+      vars:
+        packages:
+          - yum-utils
+          - device-mapper-persistent-data
+          - lvm2

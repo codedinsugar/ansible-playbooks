@@ -1,0 +1,9 @@
+- name: Install git
+  hosts: soullab
+  become: yes
+
+  tasks:
+    - name: Install latest version of git
+      ansible.builtin.yum:
+        name: git
+        state: present

@@ -1,0 +1,8 @@
+--- #Add all the users
+- name: Add users
+  become: yes
+  hosts: soullab
+  tasks:
+    - name: Add users to worker nodes
+      user:
+        name: kubeman

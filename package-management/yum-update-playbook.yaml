@@ -1,0 +1,9 @@
+- name: Yum playbook
+  hosts: soullab
+  become: yes
+
+  tasks:
+    - name: Yum update all packages
+      ansible.builtin.yum:
+        name: '*'
+        state: present

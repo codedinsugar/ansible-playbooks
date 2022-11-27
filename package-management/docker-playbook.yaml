@@ -1,0 +1,33 @@
+- name: Docker CE playbook
+  hosts: soullab
+  become: yes
+
+  tasks:
+    - name: Add Docker repo to yum
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/centos/docker-ce.repo
+        dest: /etc/yum.repos.d/docker-ce.repo
+      # The block below does not work in AlmaLinux 8, kept getting Error: Failed to download metadata for repo 'docker-ce': Cannot download repomd.xml: Cannot download repodata/repomd.xml: All mirrors were tried
+      # yum_repository:
+      #   name: docker-ce
+      #   description: Docker CE repo
+      #   baseurl: baseurl=https://download.docker.com/linux/centos/$releasever/$basearch/stable
+      #   enabled: yes
+      #   gpgcheck: 1
+      #   gpgkey: https://download.docker.com/linux/centos/gpg
+      #   state: absent
+        
+    - name: Install docker-ce
+      ansible.builtin.yum:
+        name: "{{ packages }}"
+        state: present
+      vars:
+        packages:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+    - name: Enable docker service
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: yes

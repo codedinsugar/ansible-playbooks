@@ -1,0 +1,13 @@
+- name: etc hosts playbook
+  hosts: soullab
+  become: yes
+  
+  tasks:
+    - name: Update etc hosts file
+      ansible.builtin.blockinfile:
+        path: "/etc/hosts"
+        create: yes
+        block: |
+          10.0.122.14	vm1
+          10.0.122.15	vm2
+          10.0.122.16	vm3

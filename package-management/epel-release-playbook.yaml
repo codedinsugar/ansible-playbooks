@@ -1,0 +1,9 @@
+- name: EPEL playbook
+  hosts: soullab
+  become: yes
+
+  tasks:
+    - name: Add epel-release
+      ansible.builtin.yum:
+        name: epel-release
+        state: latest

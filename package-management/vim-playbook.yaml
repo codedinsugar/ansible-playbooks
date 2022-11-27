@@ -1,0 +1,9 @@
+- name: Install vim
+  hosts: soullab
+  become: yes
+
+  tasks:
+    - name: Install latest version of vim
+      ansible.builtin.yum:
+        name: vim
+        state: present

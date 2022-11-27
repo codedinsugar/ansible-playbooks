@@ -1,0 +1,8 @@
+--- #Add users to local groups
+- hosts: soullab
+  become: yes
+  tasks:
+   - name: Add users to wheel group
+     user:
+      name: "{{ wheel_user }}"
+      groups: wheel
